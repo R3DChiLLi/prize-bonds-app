@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serials Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 10px;
+            width: 100%; /* Make input fields take full width */
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            box-sizing: border-box; /* Ensures padding doesn't affect width */
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%; /* Full-width button for smaller screens */
+            box-sizing: border-box;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .table-switch-buttons {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .table-switch-buttons button {
+            width: 48%; /* Adjust width of table switch buttons */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow-x: auto; /* Allow scrolling if needed */
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        td {
+            background-color: #fff;
+        }
+
+        .status {
+            padding: 4px 8px; /* Smaller padding for a more compact look */
+            border-radius: 12px;
+            font-weight: bold;
+            text-transform: capitalize;
+            color: white;
+            font-size: 12px; /* Reduced font size */
+            display: inline-block;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Small shadow for distinction */
+        }
+
+        .status.in-progress {
+            background-color: #ffc107;
+            border: 1px solid #e0a800;
+        }
+
+        .status.completed {
+            background-color: #28a745;
+            border: 1px solid #218838;
+        }
+
+        .status.pending {
+            background-color: #dc3545;
+            border: 1px solid #c82333;
+        }
+
+        .delete-button {
+            background-color: #dc3545;
+            border: none;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .delete-button:hover {
+            background-color: #a80000;
+        }
+
+        /* Enhanced Serial Range Styling */
+        .serial-range {
+            background: linear-gradient(135deg, #007bff 0%, #00c6ff 100%);
+            padding: 12px 18px;
+            color: white;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+        }
+
+        .serial-range span {
+            display: block;
+            font-size: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .serial-range strong {
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-container span {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .status-container .status-pending {
+            background-color: #dc3545;
+        }
+
+        .status-container .status-in-progress {
+            background-color: #ffc107;
+        }
+
+        .status-container .status-completed {
+            background-color: #28a745;
+        }
+
+        /* Mobile responsive styling */
+        @media (max-width: 768px) {
+            .table-switch-buttons {
+                flex-direction: column;
+            }
+
+            .table-switch-buttons button {
+                width: 100%; /* Buttons take full width on mobile */
+                margin-bottom: 10px;
+            }
+
+            table th, table td {
+                font-size: 14px; /* Slightly smaller text for mobile */
+                padding: 10px;
+            }
+
+            .serial-range {
+                font-size: 16px; /* Adjust serial range font size */
+            }
+
+            .status {
+                font-size: 10px; /* Smaller status font size for mobile */
+                padding: 3px 6px; /* Smaller padding for mobile */
+            }
+
+            .delete-button {
+                padding: 10px;
+                width: 100%;
+            }
+
+            form input[type="number"], form input[type="text"], form button {
+                width: 100%; /* Full-width form elements on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Serials Entry Form</h1>
+    <form action="/add-serial" method="POST">
+        <input type="number" name="serial_start" placeholder="Serial Start" required>
+        <input type="number" name="serial_end" placeholder="Serial End" required>
+        <input type="text" name="status" placeholder="Status (optional)">
+        <input type="hidden" name="table" value="{{ table }}"> <!-- Hidden field to track the current table -->
+        <button type="submit">Add Serial</button>
+    </form>
+
+    <!-- Table Switch Buttons -->
+    <div class="table-switch-buttons">
+        <button onclick="switchTable('serials_1500')">1500 Serial</button>
+        <button onclick="switchTable('serials_750')">750 Serial</button>
+    </div>
+
+    <div class="serial-list">
+        <h2>Serials List ({{ table | capitalize }})</h2>
+        
+        <!-- Serial List in Table Format -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Serial Range</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for id, start, end, status in serials %}
+                    <tr>
+                        <td>
+                            <div class="serial-range">
+                                <span>Serial Range</span>
+                                <strong>{{ start }} - {{ end }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            {% if status %}
+                                <span class="status {% if status == 'in-progress' %}in-progress{% elif status == 'completed' %}completed{% else %}pending{% endif %}">
+                                    {{ status | capitalize }}
+                                </span>
+                            {% else %}
+                                <span class="nai nikla koi"></span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="{{ url_for('delete_serial', table=table, serial_id=id) }}" method="POST">
+                                <button type="submit" class="delete-button">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Function to switch between serial tables
+        function switchTable(table) {
+            window.location.href = "?table=" + table;
+        }
+    </script>
+
+</body>
+</html>
+
