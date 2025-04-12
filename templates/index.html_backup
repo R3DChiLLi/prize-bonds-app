@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serials Database</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 30px auto;
+            padding: 30px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #2d89ef;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #1864c9;
+        }
+
+        .table-switch-buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .table-switch-buttons button {
+            margin: 5px;
+            background-color: #3cba54;
+        }
+
+        .serial-list {
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .serial-range span {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .serial-range strong {
+            display: block;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .in-progress {
+            background-color: orange;
+        }
+
+        .completed {
+            background-color: green;
+        }
+
+        .pending {
+            background-color: gray;
+        }
+
+        .delete-button {
+            background-color: #ff4d4d;
+        }
+
+        .delete-button:hover {
+            background-color: #e60000;
+        }
+
+        .logout {
+            text-align: right;
+            margin-bottom: 10px;
+            padding: 0 15px;
+            color: #444;
+        }
+
+        .logout a {
+            color: #2d89ef;
+            text-decoration: none;
+        }
+
+        .logout a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+{% if not session.username %}
+    <div class="container">
+        <h1>🔐 Login</h1>
+        <form action="{{ url_for('login') }}" method="POST">
+            <input type="text" name="username" placeholder="Enter Username" required>
+            <input type="password" name="password" placeholder="Enter Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+{% else %}
+    <div class="logout">
+        Logged in as <strong>{{ session.username }}</strong> |
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+
+    <div class="container">
+        <h1>📋 Serials Entry Form</h1>
+        <form action="/add-serial" method="POST">
+            <input type="number" name="serial_start" placeholder="Serial Start" required>
+            <input type="number" name="serial_end" placeholder="Serial End" required>
+            <input type="text" name="status" placeholder="Status (optional)">
+            <input type="hidden" name="table" value="{{ table }}">
+            <button type="submit">Add Serial</button>
+        </form>
+
+        <div class="table-switch-buttons">
+            <button onclick="switchTable('serials_1500')">🔢 1500 Serial</button>
+            <button onclick="switchTable('serials_750')">🔢 750 Serial</button>
+        </div>
+
+        <div class="serial-list">
+            <h2>📄 Serials List ({{ table | capitalize }})</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Serial Range</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for id, start, end, status in serials %}
+                    <tr>
+                        <td>
+                            <div class="serial-range">
+                                <span>Serial Range</span>
+                                <strong>{{ start }} - {{ end }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            {% if status %}
+                                <span class="status {% if status == 'in-progress' %}in-progress{% elif status == 'completed' %}completed{% else %}pending{% endif %}">
+                                    {{ status | capitalize }}
+                                </span>
+                            {% else %}
+                                <span class="status pending">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="{{ url_for('delete_serial', table=table, serial_id=id) }}" method="POST">
+                                <button type="submit" class="delete-button">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+    function switchTable(table) {
+        window.location.href = "?table=" + table;
+    }
+</script>
+
+</body>
+</html>
+

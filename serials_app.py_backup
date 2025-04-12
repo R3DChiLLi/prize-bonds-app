@@ -1,0 +1,59 @@
+from flask import Flask, render_template, request, redirect, url_for
+import mysql.connector
+import os
+from dotenv import load_dotenv
+
+app = Flask(__name__)
+
+load_dotenv()
+
+# MySQL connection setup
+db_config = {
+    'host': os.getenv('DB_HOST'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASS'),
+    'database': os.getenv('DB_NAME')
+}
+
+db = mysql.connector.connect(**db_config)
+cursor = db.cursor()
+
+@app.route('/')
+def index():
+    # Get optional table parameter (default to serials_1500)
+    table = request.args.get('table', 'serials_1500')
+    if table not in ['serials_1500', 'serials_750']:
+        table = 'serials_1500'
+
+    cursor.execute(f"SELECT id, serial_start, serial_end, status FROM {table}")
+    serials = cursor.fetchall()
+    return render_template("index.html", serials=serials, table=table)
+
+@app.route('/add-serial', methods=['POST'])
+def add_serial():
+    serial_start = request.form['serial_start']
+    serial_end = request.form['serial_end']
+    status = request.form['status']
+    table = request.form['table']
+
+    if table not in ['serials_1500', 'serials_750']:
+        return "Invalid table", 400
+
+    sql = f"INSERT INTO {table} (serial_start, serial_end, status) VALUES (%s, %s, %s)"
+    values = (serial_start, serial_end, status if status else None)
+    cursor.execute(sql, values)
+    db.commit()
+
+    return redirect(url_for('index', table=table))
+
+@app.route('/delete/<table>/<int:serial_id>', methods=['POST'])
+def delete_serial(table, serial_id):
+    if table not in ['serials_1500', 'serials_750']:
+        return "Invalid table", 400
+
+    cursor.execute(f"DELETE FROM {table} WHERE id = %s", (serial_id,))
+    db.commit()
+    return redirect(url_for('index', table=table))
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)

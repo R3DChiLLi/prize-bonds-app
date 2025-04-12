@@ -1,0 +1,38 @@
+nohup: ignoring input
+[2025-04-12 12:05:41 +0000] [3745] [INFO] Starting gunicorn 23.0.0
+[2025-04-12 12:05:41 +0000] [3745] [INFO] Listening at: http://0.0.0.0:5000 (3745)
+[2025-04-12 12:05:41 +0000] [3745] [INFO] Using worker: sync
+[2025-04-12 12:05:41 +0000] [3746] [INFO] Booting worker with pid: 3746
+[2025-04-12 12:05:41 +0000] [3747] [INFO] Booting worker with pid: 3747
+[2025-04-12 12:05:41 +0000] [3748] [INFO] Booting worker with pid: 3748
+[2025-04-12 12:05:41 +0000] [3749] [INFO] Booting worker with pid: 3749
+[2025-04-12 12:06:27 +0000] [3745] [CRITICAL] WORKER TIMEOUT (pid:3747)
+[2025-04-12 12:06:27 +0000] [3747] [ERROR] Error handling request (no URI read)
+Traceback (most recent call last):
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/workers/sync.py", line 133, in handle
+    req = next(parser)
+          ^^^^^^^^^^^^
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/http/parser.py", line 41, in __next__
+    self.mesg = self.mesg_class(self.cfg, self.unreader, self.source_addr, self.req_count)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 259, in __init__
+    super().__init__(cfg, unreader, peer_addr)
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 60, in __init__
+    unused = self.parse(self.unreader)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 271, in parse
+    self.get_data(unreader, buf, stop=True)
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 262, in get_data
+    data = unreader.read()
+           ^^^^^^^^^^^^^^^
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/http/unreader.py", line 36, in read
+    d = self.chunk()
+        ^^^^^^^^^^^^
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/http/unreader.py", line 63, in chunk
+    return self.sock.recv(self.mxchunk)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/azureuser/app/venv/lib/python3.12/site-packages/gunicorn/workers/base.py", line 204, in handle_abort
+    sys.exit(1)
+SystemExit: 1
+[2025-04-12 12:06:27 +0000] [3747] [INFO] Worker exiting (pid: 3747)
+[2025-04-12 12:06:27 +0000] [3759] [INFO] Booting worker with pid: 3759
