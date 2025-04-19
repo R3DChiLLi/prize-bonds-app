@@ -20,5 +20,6 @@ jobs:
 
     - name: Run tests
       run: |
+        cd /home/ec2-user/actions-runner/_work/prize-bonds-app/prize-bonds-app
         nohup gunicorn -w 4 -b 0.0.0.0:5002 serials_db:app > app.log 2>&1 &
 
