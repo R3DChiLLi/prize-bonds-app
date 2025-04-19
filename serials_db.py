@@ -1,60 +1,102 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 import mysql.connector
-import os
 from dotenv import load_dotenv
-
-app = Flask(__name__)
+import os
 
 load_dotenv()
 
-# MySQL connection setup
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'default_secret_key')  # Used for sessions
+
+# MySQL config
 db_config = {
     'host': os.getenv('DB_HOST'),
     'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASS'),
+    'password': os.getenv('DB_PASSWORD'),
     'database': os.getenv('DB_NAME')
 }
 
-db = mysql.connector.connect(**db_config)
-cursor = db.cursor()
 
-@app.route('/')
+def get_db_connection():
+    return mysql.connector.connect(**db_config)
+
+
+@app.route("/", methods=["GET"])
 def index():
-    # Get optional table parameter (default to serials_1500)
-    table = request.args.get('table', 'serials_1500')
-    if table not in ['serials_1500', 'serials_750']:
-        table = 'serials_1500'
+    if "username" not in session:
+        return render_template("index.html")
 
+    table = request.args.get("table", "serials_1500")
+    conn = get_db_connection()
+    cursor = conn.cursor()
     cursor.execute(f"SELECT id, serial_start, serial_end, status FROM {table}")
     serials = cursor.fetchall()
+    cursor.close()
+    conn.close()
     return render_template("index.html", serials=serials, table=table)
 
-@app.route('/add-serial', methods=['POST'])
+
+@app.route("/add-serial", methods=["POST"])
 def add_serial():
-    serial_start = request.form['serial_start']
-    serial_end = request.form['serial_end']
-    status = request.form['status']
-    table = request.form['table']
+    if "username" not in session:
+        return redirect(url_for("index"))
 
-    if table not in ['serials_1500', 'serials_750']:
-        return "Invalid table", 400
+    serial_start = request.form["serial_start"]
+    serial_end = request.form["serial_end"]
+    status = request.form.get("status", "").strip().lower()
+    table = request.form["table"]
 
-    sql = f"INSERT INTO {table} (serial_start, serial_end, status) VALUES (%s, %s, %s)"
-    values = (serial_start, serial_end, status if status else None)
-    cursor.execute(sql, values)
-    db.commit()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        INSERT INTO {table} (serial_start, serial_end, status)
+        VALUES (%s, %s, %s)
+    """, (serial_start, serial_end, status))
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-    return redirect(url_for('index', table=table))
+    return redirect(url_for("index", table=table))
 
-@app.route('/delete/<table>/<int:serial_id>', methods=['POST'])
+
+@app.route("/delete/<table>/<int:serial_id>", methods=["POST"])
 def delete_serial(table, serial_id):
-    if table not in ['serials_1500', 'serials_750']:
-        return "Invalid table", 400
+    if "username" not in session:
+        return redirect(url_for("index"))
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
     cursor.execute(f"DELETE FROM {table} WHERE id = %s", (serial_id,))
-    db.commit()
-    return redirect(url_for('index', table=table))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for("index", table=table))
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
 
+@app.route("/login", methods=["POST"])
+def login():
+    username = request.form["username"]
+    password = request.form["password"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if result and result[0] == password:
+        session["username"] = username
+        return redirect(url_for("index"))
+    else:
+        return "Invalid username or password", 401
+
+
+@app.route("/logout")
+def logout():
+    session.pop("username", None)
+    return redirect(url_for("index"))
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
