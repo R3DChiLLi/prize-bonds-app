@@ -21,7 +21,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/pb-app:latest .
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/pb-app-image:latest .
 
     - name: Push Docker image to Docker Hub
       run: |
