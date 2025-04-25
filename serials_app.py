@@ -6,11 +6,37 @@ import logging
 from logging.handlers import RotatingFileHandler
 import sys
 from pathlib import Path
+from opencensus.ext.azure.trace_exporter import AzureExporter
+from opencensus.ext.flask.flask_middleware import FlaskMiddleware
+from opencensus.trace.samplers import ProbabilitySampler
+from opencensus.ext.azure.log_exporter import AzureLogHandler
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'default_secret_key')  # Used for sessions
+
+# Configure Azure Application Insights
+instrumentation_key = os.getenv('APPINSIGHTS_INSTRUMENTATIONKEY')
+if instrumentation_key:
+    # Configure Azure Exporter
+    exporter = AzureExporter(
+        connection_string=f'InstrumentationKey={instrumentation_key}'
+    )
+    
+    # Configure Flask middleware for request tracking
+    FlaskMiddleware(
+        app,
+        exporter=exporter,
+        sampler=ProbabilitySampler(rate=1.0)
+    )
+    
+    # Configure Azure Log Handler
+    azure_handler = AzureLogHandler(
+        connection_string=f'InstrumentationKey={instrumentation_key}'
+    )
+    azure_handler.setLevel(logging.INFO)
+    app.logger.addHandler(azure_handler)
 
 # Configure logging
 if not app.debug:
