@@ -5,10 +5,12 @@ on:
     branches: [ master ]  # Runs when you push to master
   workflow_dispatch:       # Also allows manual run from GitHub
 
+env:
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/pb-app-image:${{ github.sha }}
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: prod
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -21,20 +23,23 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/pb-app-image:{{ github.sha }} .
+        docker build -t ${{ env.IMAGE_NAME }} .
+
+    - name: Tag Docker image as latest
+      run: |
+        docker tag ${{ env.IMAGE_NAME }} ${{ secrets.DOCKER_USERNAME }}/pb-app-image:latest
 
     - name: Push Docker image to Docker Hub
       run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/pb-app-image:{{ github.sha }}
+        docker push ${{ env.IMAGE_NAME }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/pb-app-image:latest
 
     - name: Deploy to Azure App Service using Docker
       uses: azure/webapps-deploy@v2
       with:
         app-name: pb-app-service  # Replace with your app name
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        images: ${{ secrets.DOCKER_USERNAME }}/pb-app-image:{{ github.sha }}  # Docker image to deploy
-
-
+        images: ${{ env.IMAGE_NAME }}
 
 
 
