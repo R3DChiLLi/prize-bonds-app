@@ -10,14 +10,31 @@ from opencensus.ext.azure.trace_exporter import AzureExporter
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.trace.samplers import ProbabilitySampler
 from opencensus.ext.azure.log_exporter import AzureLogHandler
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 
 load_dotenv()
 
+# Initialize Azure Key Vault client
+def get_keyvault_secret(secret_name):
+    try:
+        keyvault_url = os.getenv('KEYVAULT_URL')
+        if not keyvault_url:
+            raise ValueError("KEYVAULT_URL environment variable is not set")
+            
+        credential = DefaultAzureCredential()
+        client = SecretClient(vault_url=keyvault_url, credential=credential)
+        secret = client.get_secret(secret_name)
+        return secret.value
+    except Exception as e:
+        app.logger.error(f"Error getting secret from Key Vault: {str(e)}")
+        return None
+
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'default_secret_key')  # Used for sessions
+app.secret_key = get_keyvault_secret('SECRET-KEY') or os.getenv('SECRET_KEY', 'default_secret_key')
 
 # Configure Azure Application Insights
-instrumentation_key = os.getenv('APPINSIGHTS_INSTRUMENTATIONKEY')
+instrumentation_key = get_keyvault_secret('APPINSIGHTS-KEY') or os.getenv('APPINSIGHTS_INSTRUMENTATIONKEY')
 if instrumentation_key:
     # Configure Azure Exporter
     exporter = AzureExporter(
@@ -81,10 +98,10 @@ if not app.debug:
     app.logger.info(f'Log file location: {log_file}')
 # MySQL config
 db_config = {
-    'host': os.getenv('DB_HOST'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'database': os.getenv('DB_NAME')
+    'host': get_keyvault_secret('DB-HOST') or os.getenv('DB_HOST'),
+    'user': get_keyvault_secret('DB-USER') or os.getenv('DB_USER'),
+    'password': get_keyvault_secret('DB-PASSWORD') or os.getenv('DB_PASSWORD'),
+    'database': get_keyvault_secret('DB-NAME') or os.getenv('DB_NAME')
 }
 
 
